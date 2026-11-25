@@ -32,43 +32,62 @@ class Pengguna {
   final String email;
 }
 
+// Hasil untuk objek yang ditolak tahap penyaring (misalnya kerikil atau biji lain).
+const hasilBukan = 'Bukan Jagung Ketan Putih';
+
 class Riwayat {
   Riwayat.dariJson(Map<String, dynamic> json)
       : id = json['id'] as int,
         hasil = json['hasil_prediksi'] as String,
         skor = (json['skor_kepercayaan'] as num).toDouble(),
         waktu = DateTime.parse(json['waktu'] as String).toLocal(),
-        urlGambar = json['url_gambar'] as String;
+        urlGambar = json['url_gambar'] as String,
+        objek = ((json['objek'] as List?) ?? [])
+            .map((e) => ObjekTerdeteksi.dariJson(e as Map<String, dynamic>))
+            .toList();
 
   final int id;
   final String hasil;
   final double skor;
   final DateTime waktu;
   final String urlGambar;
+  // Bounding box setiap objek di foto (kosong untuk riwayat sebelum tahap penyaring ada).
+  final List<ObjekTerdeteksi> objek;
 
   bool get layak => hasil == 'Layak';
+  bool get bukan => hasil == hasilBukan;
 }
 
-// Satu benih dari mode kamera. Koordinat 0-1 terhadap lebar dan tinggi frame.
-class BenihTerdeteksi {
-  BenihTerdeteksi.dariJson(Map<String, dynamic> json)
+// Satu objek hasil deteksi (foto atau frame kamera). Koordinat 0-1 terhadap lebar dan tinggi citra.
+class ObjekTerdeteksi {
+  ObjekTerdeteksi.dariJson(Map<String, dynamic> json)
       : x = (json['x'] as num).toDouble(),
         y = (json['y'] as num).toDouble(),
         w = (json['w'] as num).toDouble(),
         h = (json['h'] as num).toDouble(),
-        peluangLayak = (json['peluang_layak'] as num).toDouble();
+        prediksi = json['prediksi'] as String,
+        skor = (json['skor_kepercayaan'] as num).toDouble(),
+        peluangLayak = (json['peluang_layak'] as num?)?.toDouble();
 
   final double x;
   final double y;
   final double w;
   final double h;
-  final double peluangLayak;
+  final String prediksi;
+  final double skor;
+  // Kosong bila objek bukan jagung ketan putih (kelayakannya tidak dinilai).
+  final double? peluangLayak;
 
-  // Persamaan 3-2: layak bila peluang >= 0,5.
-  bool get layak => peluangLayak >= 0.5;
+  bool get layak => prediksi == 'Layak';
+  bool get bukan => prediksi == hasilBukan;
 
-  // Dipotong ke bawah, jadi 0,4999 tampil 0,49 dan tidak terlihat seperti ambang 0,50.
-  String get skorTampil => ((peluangLayak * 100).floor() / 100).toStringAsFixed(2).replaceAll('.', ',');
+  // Mode kamera menampilkan peluang layak 0-1, dipotong ke bawah, jadi 0,4999 tampil 0,49
+  // dan tidak terlihat seperti ambang 0,50.
+  String get labelKamera {
+    final p = peluangLayak;
+    if (bukan || p == null) return 'Bukan ketan putih';
+    return '${((p * 100).floor() / 100).toStringAsFixed(2).replaceAll('.', ',')} $prediksi';
+  }
 }
 
 class DaftarRiwayat {
@@ -151,13 +170,13 @@ class Api {
     return Riwayat.dariJson(data['data'] as Map<String, dynamic>);
   }
 
-  Future<List<BenihTerdeteksi>> deteksi(String pathFrame) async {
+  Future<List<ObjekTerdeteksi>> deteksi(String pathFrame) async {
     final permintaan = http.MultipartRequest('POST', Uri.parse('$alamatApi/deteksi'))
       ..headers.addAll(headerToken)
       ..files.add(await http.MultipartFile.fromPath('frame', pathFrame));
     final data = await _kirim(() async => http.Response.fromStream(await _klien.send(permintaan)),
         batasWaktu: const Duration(seconds: 20));
-    return (data['benih'] as List).map((e) => BenihTerdeteksi.dariJson(e as Map<String, dynamic>)).toList();
+    return (data['benih'] as List).map((e) => ObjekTerdeteksi.dariJson(e as Map<String, dynamic>)).toList();
   }
 
   Future<DaftarRiwayat> riwayat({int halaman = 1}) async {

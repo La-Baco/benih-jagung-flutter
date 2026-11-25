@@ -5,8 +5,9 @@ import 'package:flutter/material.dart';
 
 import '../layanan/api.dart';
 import '../tema.dart';
+import '../widget/kotak_objek.dart';
 
-// Mode kamera: frame dikirim ke server satu per satu, lalu kotak setiap benih digambar
+// Mode kamera: frame dikirim ke server satu per satu, lalu kotak setiap objek digambar
 // di atas pratinjau. Ini perluasan di luar Batasan no. 4 (satu benih per citra), jadi
 // ditandai sebagai mode percobaan.
 class HalamanKamera extends StatefulWidget {
@@ -21,7 +22,7 @@ class HalamanKamera extends StatefulWidget {
 
 class _HalamanKameraState extends State<HalamanKamera> with WidgetsBindingObserver {
   CameraController? _kamera;
-  List<BenihTerdeteksi> _benih = [];
+  List<ObjekTerdeteksi> _benih = [];
   String? _galat;
   bool _jalan = true;
   bool _memindai = false;
@@ -128,9 +129,9 @@ class _HalamanKameraState extends State<HalamanKamera> with WidgetsBindingObserv
           color: Warna.hijauMuda,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: const Text(
-            'Mode percobaan. Letakkan benih di atas alas hitam dan beri jarak antarbenih. '
+            'Mode percobaan. Letakkan benih di atas alas polos dan beri jarak antarbenih. '
             'Atur tinggi HP sampai satu benih kira-kira selebar sepertiga layar. '
-            'Skor 0 sampai 1: 0,50 ke atas berarti layak.',
+            'Skor 0 sampai 1: 0,50 ke atas berarti layak. Kotak oranye: bukan jagung ketan putih.',
             style: TextStyle(fontSize: 13),
           ),
         ),
@@ -159,7 +160,7 @@ class _HalamanKameraState extends State<HalamanKamera> with WidgetsBindingObserv
                         fit: StackFit.expand,
                         children: [
                           CameraPreview(kamera),
-                          CustomPaint(painter: _PelukisKotak(_benih)),
+                          CustomPaint(painter: PelukisKotak(_benih, label: (o) => o.labelKamera)),
                         ],
                       ),
                     ),
@@ -193,45 +194,11 @@ class _HalamanKameraState extends State<HalamanKamera> with WidgetsBindingObserv
     if (!_siap) return 'Kamera belum siap.';
     if (_galat != null) return _galat!;
     if (!_jalan) return 'Pemindaian dijeda.';
-    if (_benih.isEmpty) return 'Belum ada benih terdeteksi.';
+    if (_benih.isEmpty) return 'Belum ada objek terdeteksi.';
+    final bukan = _benih.where((b) => b.bukan).length;
     final layak = _benih.where((b) => b.layak).length;
-    return '${_benih.length} benih: $layak layak, ${_benih.length - layak} tidak layak.';
+    final ketan = _benih.length - bukan;
+    final teks = '$ketan benih: $layak layak, ${ketan - layak} tidak layak.';
+    return bukan == 0 ? teks : '$teks $bukan objek bukan jagung ketan putih.';
   }
-}
-
-class _PelukisKotak extends CustomPainter {
-  _PelukisKotak(this.benih);
-
-  final List<BenihTerdeteksi> benih;
-
-  @override
-  void paint(Canvas canvas, Size ukuran) {
-    for (final b in benih) {
-      final warna = b.layak ? Warna.hasilLayak : Warna.hasilTidakLayak;
-      final kotak = Rect.fromLTWH(b.x * ukuran.width, b.y * ukuran.height, b.w * ukuran.width, b.h * ukuran.height);
-      canvas.drawRect(
-        kotak,
-        Paint()
-          ..color = warna
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3,
-      );
-
-      // Label di atas kotak: teks putih di atas warna hasil (kontras 5,4:1 dan 6,5:1).
-      final teks = TextPainter(
-        text: TextSpan(
-          text: '${b.skorTampil} ${b.layak ? 'Layak' : 'Tidak Layak'}',
-          style: const TextStyle(fontFamily: 'PlusJakartaSans', color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      final atas = (kotak.top - teks.height - 6).clamp(0.0, ukuran.height - teks.height - 6);
-      final label = Rect.fromLTWH(kotak.left, atas, teks.width + 10, teks.height + 6);
-      canvas.drawRect(label, Paint()..color = warna);
-      teks.paint(canvas, Offset(label.left + 5, label.top + 3));
-    }
-  }
-
-  @override
-  bool shouldRepaint(_PelukisKotak lama) => lama.benih != benih;
 }

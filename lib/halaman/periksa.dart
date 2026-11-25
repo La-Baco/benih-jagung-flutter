@@ -190,7 +190,7 @@ class _HalamanPeriksaState extends State<HalamanPeriksa> {
 
   List<Widget> _bagianHasil() {
     return [
-      KartuHasil(riwayat: _hasil!, gambar: Image.file(_foto!, fit: BoxFit.cover)),
+      KartuHasil(riwayat: _hasil!, gambar: FileImage(_foto!)),
       const SizedBox(height: 16),
       FilledButton(onPressed: _ulang, child: const Text('Periksa benih lain')),
     ];

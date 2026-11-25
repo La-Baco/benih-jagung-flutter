@@ -129,7 +129,7 @@ class _BarisRiwayat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final warna = riwayat.layak ? Warna.hasilLayak : Warna.hasilTidakLayak;
+    final warna = warnaHasil(riwayat.hasil);
     return Material(
       color: Warna.kertas,
       shape: RoundedRectangleBorder(
@@ -147,7 +147,7 @@ class _BarisRiwayat extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
-                child: SizedBox(width: 64, height: 64, child: _gambar(riwayat, header, kecil: true)),
+                child: SizedBox(width: 64, height: 64, child: _gambar(riwayat, header)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -170,14 +170,14 @@ class _BarisRiwayat extends StatelessWidget {
 }
 
 // Foto riwayat hanya bisa diambil dengan token pemiliknya.
-Widget _gambar(Riwayat riwayat, Map<String, String> header, {bool kecil = false}) {
+Widget _gambar(Riwayat riwayat, Map<String, String> header) {
   return ColoredBox(
     color: const Color(0xFF222222),
     child: Image.network(
       riwayat.urlGambar,
       headers: header,
       fit: BoxFit.cover,
-      cacheWidth: kecil ? 192 : null,
+      cacheWidth: 192,
       semanticLabel: 'Foto benih',
       errorBuilder: (_, _, _) => const Center(
         child: Icon(Icons.broken_image_outlined, color: Colors.white70, semanticLabel: 'Foto tidak dapat dimuat'),
@@ -198,7 +198,7 @@ class _DetailRiwayat extends StatelessWidget {
       appBar: AppBar(title: const Text('Detail Riwayat')),
       body: ListView(
         padding: const EdgeInsets.all(16),
-        children: [KartuHasil(riwayat: riwayat, gambar: _gambar(riwayat, header))],
+        children: [KartuHasil(riwayat: riwayat, gambar: NetworkImage(riwayat.urlGambar, headers: header))],
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../layanan/api.dart';
 import '../tema.dart';
+import 'kotak_objek.dart';
 
 String formatTanggal(DateTime waktu) {
   const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -15,11 +16,11 @@ class KartuHasil extends StatelessWidget {
   const KartuHasil({super.key, required this.riwayat, required this.gambar});
 
   final Riwayat riwayat;
-  final Widget gambar;
+  final ImageProvider gambar;
 
   @override
   Widget build(BuildContext context) {
-    final warna = riwayat.layak ? Warna.hasilLayak : Warna.hasilTidakLayak;
+    final warna = warnaHasil(riwayat.hasil);
     return Kotak(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -28,7 +29,7 @@ class KartuHasil extends StatelessWidget {
           const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
-            child: AspectRatio(aspectRatio: 1, child: ColoredBox(color: const Color(0xFF222222), child: gambar)),
+            child: GambarBerkotak(gambar: gambar, objek: riwayat.objek, keterangan: 'Foto yang diperiksa'),
           ),
           const SizedBox(height: 14),
           Semantics(
@@ -39,6 +40,11 @@ class KartuHasil extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
+          if (riwayat.bukan) ...[
+            const Text('Objek di foto tidak dikenali sebagai benih jagung ketan putih, '
+                'jadi kelayakan tanamnya tidak dinilai.'),
+            const SizedBox(height: 6),
+          ],
           Text('Skor kepercayaan: ${formatSkor(riwayat.skor)}'),
           const SizedBox(height: 8),
           // Batang berwarna tinta, bukan hijau: batang menunjukkan keyakinan terhadap kelas

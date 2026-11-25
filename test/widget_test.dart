@@ -203,4 +203,32 @@ void main() {
     expect(await periksaBerkasCitra(await tulis('d.jpg', besar)), 'Citra tidak valid. Ukuran citra maksimal 10 MB.');
     await folder.delete(recursive: true);
   });
+
+  test('hasil bukan jagung ketan putih dibaca beserta bounding box-nya', () {
+    final riwayat = Riwayat.dariJson({
+      'id': 7,
+      'hasil_prediksi': 'Bukan Jagung Ketan Putih',
+      'skor_kepercayaan': 99.12,
+      'waktu': '2026-11-25T10:00:00+07:00',
+      'url_gambar': 'https://contoh.test/gambar/7',
+      'objek': [
+        {'x': 0.31, 'y': 0.3, 'w': 0.35, 'h': 0.33, 'prediksi': 'Bukan Jagung Ketan Putih', 'skor_kepercayaan': 99.12},
+      ],
+    });
+    expect(riwayat.bukan, isTrue);
+    expect(riwayat.layak, isFalse);
+    expect(riwayat.objek.single.x, 0.31);
+    expect(riwayat.objek.single.labelKamera, 'Bukan ketan putih');
+
+    // Riwayat lama (sebelum tahap penyaring) tidak punya kolom objek.
+    final lama = Riwayat.dariJson({
+      'id': 1, 'hasil_prediksi': 'Layak', 'skor_kepercayaan': 97.3,
+      'waktu': '2026-11-20T10:00:00+07:00', 'url_gambar': 'https://contoh.test/gambar/1',
+    });
+    expect(lama.objek, isEmpty);
+
+    final benih = ObjekTerdeteksi.dariJson(
+        {'x': 0.1, 'y': 0.1, 'w': 0.2, 'h': 0.2, 'prediksi': 'Tidak Layak', 'skor_kepercayaan': 50.01, 'peluang_layak': 0.4999});
+    expect(benih.labelKamera, '0,49 Tidak Layak');
+  });
 }

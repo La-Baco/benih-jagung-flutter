@@ -13,10 +13,17 @@ class Warna {
   static const hijauMuda = Color(0xFFEEF1E8);
   static const hasilLayak = Color(0xFF1F7A33);
   static const hasilTidakLayak = Color(0xFFB3261E);
+  static const hasilBukan = Color(0xFF8A4B00);
   static const galatTeks = Color(0xFF8C1D18);
   static const galatLatar = Color(0xFFFBECEB);
   static const batangLatar = Color(0xFFE4E7DC);
 }
+
+Color warnaHasil(String hasil) => switch (hasil) {
+      'Layak' => Warna.hasilLayak,
+      'Tidak Layak' => Warna.hasilTidakLayak,
+      _ => Warna.hasilBukan,
+    };
 
 ThemeData buatTema() {
   final dasar = ThemeData(

@@ -13,9 +13,9 @@ Aplikasi Flutter untuk petani. Isinya memeriksa kelayakan tanam benih jagung ket
 | Masuk | Email dan kata sandi petani. Login cukup sekali, karena token disimpan di Android Keystore sampai menekan Keluar. Akun admin ditolak, karena admin memakai website |
 | Daftar | Registrasi mandiri petani: nama, email, kata sandi, dan konfirmasi. Setelah berhasil langsung masuk ke beranda |
 | Lupa kata sandi | Mengirim tautan atur ulang ke email terdaftar. Kata sandi baru diatur di halaman website |
-| Periksa | Ambil foto atau pilih dari galeri, pratinjau, lalu kirim. Format (JPEG/PNG) dan ukuran (maksimal 10 MB) diperiksa sebelum dikirim. Hasil Layak/Tidak Layak, skor kepercayaan, dan batang skor |
-| Kamera | Mode percobaan. Setiap benih di atas alas hitam diberi kotak dan skor 0-1 (0,50 ke atas = layak). Bisa dijeda. Hasil tidak disimpan |
-| Riwayat | Daftar hasil pemeriksaan, tarik ke bawah untuk memuat ulang, ketuk satu baris untuk melihat fotonya |
+| Periksa | Ambil foto atau pilih dari galeri, pratinjau, lalu kirim. Format (JPEG/PNG) dan ukuran (maksimal 10 MB) diperiksa sebelum dikirim. Hasil Layak, Tidak Layak, atau Bukan Jagung Ketan Putih (misalnya kerikil), skor kepercayaan, batang skor, dan foto dengan bounding box setiap objek |
+| Kamera | Mode percobaan. Setiap objek di atas alas polos diberi kotak: benih jagung ketan putih dengan skor 0-1 (0,50 ke atas = layak), benda lain dengan kotak oranye "Bukan ketan putih". Bisa dijeda. Hasil tidak disimpan |
+| Riwayat | Daftar hasil pemeriksaan, tarik ke bawah untuk memuat ulang, ketuk satu baris untuk melihat fotonya beserta bounding box |
 
 Setiap layar yang memuat data punya keadaan memuat, kosong, dan galat. Bila token ditolak server, aplikasi kembali ke halaman masuk dengan pesan "Sesi berakhir".
 
@@ -34,10 +34,11 @@ Setiap layar yang memuat data punya keadaan memuat, kosong, dan galat. Bila toke
 | `lib/halaman/kamera.dart` | Kamera langsung. Satu frame dikirim setelah jawaban frame sebelumnya diterima, jadi permintaan tidak menumpuk |
 | `lib/halaman/riwayat.dart` | Daftar riwayat bertahap dan detail |
 | `lib/widget/kartu_hasil.dart` | Kartu hasil klasifikasi |
-| `lib/tema.dart` | Warna dan gaya yang sama dengan web (garis tegas 2 px, warna hasil hanya untuk kelas) |
+| `lib/widget/kotak_objek.dart` | Penggambar bounding box (dipakai kartu hasil dan mode kamera); rasio foto dibaca dulu supaya kotak tepat di atas objek |
+| `lib/tema.dart` | Warna dan gaya yang sama dengan web (garis tegas 2 px, warna hasil hanya untuk kelas: hijau Layak, merah Tidak Layak, cokelat Bukan Jagung Ketan Putih) |
 | `assets/` | Logo jagung putih dan huruf Plus Jakarta Sans (lisensi OFL) |
 | `android/` | Nama aplikasi, ikon adaptif, izin internet dan kamera (izin mikrofon dari plugin kamera dibuang) |
-| `test/widget_test.dart` | 11 uji: masuk, beranda, riwayat kosong, galat, sesi berakhir, ikon mata, registrasi, lupa kata sandi, dan pemeriksaan format/ukuran citra |
+| `test/widget_test.dart` | 12 uji: masuk, beranda, riwayat kosong, galat, sesi berakhir, ikon mata, registrasi, lupa kata sandi, pemeriksaan format/ukuran citra, dan pembacaan hasil Bukan Jagung Ketan Putih beserta bounding box |
 
 ## Membangun dan menguji
 
