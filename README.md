@@ -5,6 +5,7 @@ Aplikasi Flutter untuk petani. Isinya memeriksa kelayakan tanam benih jagung ket
 - **Versi:** Flutter 3.47.5, Dart 3.13.4, Android 7.0 (API 24) ke atas
 - **Paket:** `http`, `image_picker`, `camera`, dan `flutter_secure_storage`
 - **Server:** API `https://api.skripsi-danur.synvorateknologiindonesia.web.id/api`
+- **Unduh APK:** halaman [Releases](https://github.com/La-Baco/benih-jagung-flutter/releases/latest) (versi 25 November 2026 sudah memuat hasil "Bukan Jagung Ketan Putih" dan bounding box)
 
 ## Layar
 
