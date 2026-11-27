@@ -32,7 +32,8 @@ class Pengguna {
   final String email;
 }
 
-// Hasil untuk objek yang ditolak tahap penyaring (misalnya kerikil atau biji lain).
+// Hasil lama (25-26 November 2026) dari tahap penyaring yang sudah tidak dipakai. Riwayat
+// dengan hasil ini masih bisa ada di server, jadi tetap dibaca dan diberi warna sendiri.
 const hasilBukan = 'Bukan Jagung Ketan Putih';
 
 class Riwayat {
@@ -58,7 +59,7 @@ class Riwayat {
   bool get bukan => hasil == hasilBukan;
 }
 
-// Satu objek hasil deteksi (foto atau frame kamera). Koordinat 0-1 terhadap lebar dan tinggi citra.
+// Satu objek hasil deteksi pada foto. Koordinat 0-1 terhadap lebar dan tinggi citra.
 class ObjekTerdeteksi {
   ObjekTerdeteksi.dariJson(Map<String, dynamic> json)
       : x = (json['x'] as num).toDouble(),
@@ -80,23 +81,29 @@ class ObjekTerdeteksi {
 
   bool get layak => prediksi == 'Layak';
   bool get bukan => prediksi == hasilBukan;
+}
 
-  // Mode kamera menampilkan peluang layak 0-1, dipotong ke bawah, jadi 0,4999 tampil 0,49
-  // dan tidak terlihat seperti ambang 0,50.
-  String get labelKamera {
-    final p = peluangLayak;
-    if (bukan || p == null) return 'Bukan ketan putih';
-    return '${((p * 100).floor() / 100).toStringAsFixed(2).replaceAll('.', ',')} $prediksi';
-  }
+// Jumlah hasil Layak dan Tidak Layak milik petani serta tanggal akunnya dibuat
+// (Beranda dan Akun, Gambar 3.15a dan 3.16b).
+class Ringkasan {
+  Ringkasan.dariJson(Map<String, dynamic>? json)
+      : layak = (json?['layak'] as num?)?.toInt() ?? 0,
+        tidakLayak = (json?['tidak_layak'] as num?)?.toInt() ?? 0,
+        bergabung = json?['bergabung'] == null ? null : DateTime.parse(json!['bergabung'] as String).toLocal();
+
+  final int layak;
+  final int tidakLayak;
+  final DateTime? bergabung;
 }
 
 class DaftarRiwayat {
-  DaftarRiwayat(this.isi, this.halaman, this.halamanTerakhir, this.total);
+  DaftarRiwayat(this.isi, this.halaman, this.halamanTerakhir, this.total, this.ringkasan);
 
   final List<Riwayat> isi;
   final int halaman;
   final int halamanTerakhir;
   final int total;
+  final Ringkasan ringkasan;
 }
 
 class Api {
@@ -170,20 +177,12 @@ class Api {
     return Riwayat.dariJson(data['data'] as Map<String, dynamic>);
   }
 
-  Future<List<ObjekTerdeteksi>> deteksi(String pathFrame) async {
-    final permintaan = http.MultipartRequest('POST', Uri.parse('$alamatApi/deteksi'))
-      ..headers.addAll(headerToken)
-      ..files.add(await http.MultipartFile.fromPath('frame', pathFrame));
-    final data = await _kirim(() async => http.Response.fromStream(await _klien.send(permintaan)),
-        batasWaktu: const Duration(seconds: 20));
-    return (data['benih'] as List).map((e) => ObjekTerdeteksi.dariJson(e as Map<String, dynamic>)).toList();
-  }
-
   Future<DaftarRiwayat> riwayat({int halaman = 1}) async {
     final data = await _kirim(
         () => _klien.get(Uri.parse('$alamatApi/riwayat?page=$halaman'), headers: headerToken));
     final isi = (data['data'] as List).map((e) => Riwayat.dariJson(e as Map<String, dynamic>)).toList();
-    return DaftarRiwayat(isi, data['halaman'] as int, data['halaman_terakhir'] as int, data['total'] as int);
+    return DaftarRiwayat(isi, data['halaman'] as int, data['halaman_terakhir'] as int, data['total'] as int,
+        Ringkasan.dariJson(data['ringkasan'] as Map<String, dynamic>?));
   }
 
   Future<Map<String, dynamic>> _kirim(Future<http.Response> Function() aksi,

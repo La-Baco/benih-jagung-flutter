@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'dart:io';
 
-import 'package:benih_jagung/halaman/periksa.dart';
+import 'package:benih_jagung/halaman/klasifikasi.dart';
 import 'package:benih_jagung/layanan/api.dart';
 import 'package:benih_jagung/layanan/sesi.dart';
 import 'package:benih_jagung/main.dart';
@@ -28,8 +28,8 @@ void main() {
     final api = await buatApi(MockClient((_) async => json({}, 500)));
     await tester.pumpWidget(AplikasiBenih(api: api));
 
-    expect(find.text('Masuk'), findsOneWidget);
-    await tester.tap(find.text('Masuk'));
+    expect(find.widgetWithText(FilledButton, 'Masuk'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Masuk'));
     await tester.pump();
 
     expect(find.text('Email wajib diisi.'), findsOneWidget);
@@ -42,7 +42,7 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).at(0), 'petani@benih.test');
     await tester.enterText(find.byType(TextFormField).at(1), 'salah');
-    await tester.tap(find.text('Masuk'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Masuk'));
     await tester.pumpAndSettle();
 
     expect(find.text('Login gagal. Email atau kata sandi salah.'), findsOneWidget);
@@ -59,11 +59,11 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).at(0), 'petani@benih.test');
     await tester.enterText(find.byType(TextFormField).at(1), '12345678');
-    await tester.tap(find.text('Masuk'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Masuk'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Halo, Petani Contoh'), findsOneWidget);
-    expect(find.text('Ambil foto benih'), findsOneWidget);
+    expect(find.text('Petani Contoh'), findsOneWidget);
+    expect(find.text('Klasifikasi benih'), findsOneWidget);
     expect(api.sesi.token, '1|abc');
   });
 
@@ -73,7 +73,9 @@ void main() {
       tersimpan: {'token': '1|abc', 'nama': 'Petani Contoh', 'email': 'petani@benih.test'},
     );
     await tester.pumpWidget(AplikasiBenih(api: api));
-    expect(find.text('Halo, Petani Contoh'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.text('Petani Contoh'), findsOneWidget);
+    expect(find.text('Jumlah klasifikasi'), findsOneWidget);
 
     await tester.tap(find.text('Riwayat'));
     await tester.pumpAndSettle();
@@ -99,7 +101,6 @@ void main() {
       tersimpan: {'token': '1|lama', 'nama': 'Petani Contoh', 'email': 'petani@benih.test'},
     );
     await tester.pumpWidget(AplikasiBenih(api: api));
-    await tester.tap(find.text('Riwayat'));
     await tester.pumpAndSettle();
 
     expect(find.text('Sesi berakhir. Silakan masuk lagi.'), findsOneWidget);
@@ -142,7 +143,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(dikirim?['password_confirmation'], 'rahasia123');
-    expect(find.text('Halo, Petani Baru'), findsOneWidget);
+    expect(find.text('Petani Baru'), findsOneWidget);
     expect(api.sesi.token, '2|baru');
   });
 
@@ -204,7 +205,7 @@ void main() {
     await folder.delete(recursive: true);
   });
 
-  test('hasil bukan jagung ketan putih dibaca beserta bounding box-nya', () {
+  test('riwayat lama "Bukan Jagung Ketan Putih" tetap terbaca beserta bounding box-nya', () {
     final riwayat = Riwayat.dariJson({
       'id': 7,
       'hasil_prediksi': 'Bukan Jagung Ketan Putih',
@@ -218,7 +219,6 @@ void main() {
     expect(riwayat.bukan, isTrue);
     expect(riwayat.layak, isFalse);
     expect(riwayat.objek.single.x, 0.31);
-    expect(riwayat.objek.single.labelKamera, 'Bukan ketan putih');
 
     // Riwayat lama (sebelum tahap penyaring) tidak punya kolom objek.
     final lama = Riwayat.dariJson({
@@ -229,6 +229,59 @@ void main() {
 
     final benih = ObjekTerdeteksi.dariJson(
         {'x': 0.1, 'y': 0.1, 'w': 0.2, 'h': 0.2, 'prediksi': 'Tidak Layak', 'skor_kepercayaan': 50.01, 'peluang_layak': 0.4999});
-    expect(benih.labelKamera, '0,49 Tidak Layak');
+    expect(benih.layak, isFalse);
+    expect(benih.peluangLayak, 0.4999);
+  });
+
+  testWidgets('beranda menampilkan jumlah klasifikasi, layak, tidak layak, dan riwayat terakhir', (tester) async {
+    final api = await buatApi(
+      MockClient((_) async => json({
+            'data': [
+              {'id': 5, 'hasil_prediksi': 'Layak', 'skor_kepercayaan': 99.5, 'waktu': '2026-11-27T10:00:00+07:00',
+               'url_gambar': 'https://contoh.test/gambar/5', 'objek': []},
+            ],
+            'halaman': 1, 'halaman_terakhir': 1, 'total': 3,
+            'ringkasan': {'layak': 2, 'tidak_layak': 1, 'bergabung': '2026-11-20T08:00:00+07:00'},
+          }, 200)),
+      tersimpan: {'token': '1|abc', 'nama': 'Petani Contoh', 'email': 'petani@benih.test'},
+    );
+    await tester.pumpWidget(AplikasiBenih(api: api));
+    await tester.pumpAndSettle();
+
+    expect(find.text('3'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Klasifikasi terakhir'), findsOneWidget);
+    expect(find.text('Skor kepercayaan: '), findsNothing);
+    expect(find.text('Layak'), findsWidgets);
+
+    await tester.tap(find.text('Akun'));
+    await tester.pumpAndSettle();
+    expect(find.text('petani@benih.test'), findsOneWidget);
+    expect(find.text('20 Nov 2026'), findsOneWidget);
+    expect(find.text('Logout'), findsOneWidget);
+  });
+
+  testWidgets('menu bawah sesuai rancangan dan tidak ada lagi mode kamera langsung', (tester) async {
+    final api = await buatApi(
+      MockClient((_) async => json({'data': [], 'halaman': 1, 'halaman_terakhir': 1, 'total': 0}, 200)),
+      tersimpan: {'token': '1|abc', 'nama': 'Petani Contoh', 'email': 'petani@benih.test'},
+    );
+    await tester.pumpWidget(AplikasiBenih(api: api));
+    await tester.pumpAndSettle();
+
+    for (final menu in ['Beranda', 'Klasifikasi', 'Riwayat', 'Akun']) {
+      expect(find.widgetWithText(NavigationDestination, menu), findsOneWidget);
+    }
+    expect(find.textContaining('Kamera Langsung'), findsNothing);
+
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Klasifikasi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Klasifikasi Benih'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Format JPEG atau PNG, maksimal 10 MB'), 200);
+    expect(find.text('Format JPEG atau PNG, maksimal 10 MB'), findsOneWidget);
+    // Tombol kirim baru aktif setelah citra dipilih.
+    final kirim = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Kirim dan klasifikasikan'));
+    expect(kirim.onPressed, isNull);
   });
 }

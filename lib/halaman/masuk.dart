@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../layanan/api.dart';
 import '../tema.dart';
-import 'beranda.dart';
 import 'daftar.dart';
 import 'lupa_sandi.dart';
+import 'utama.dart';
 
 class HalamanMasuk extends StatefulWidget {
   const HalamanMasuk({super.key, required this.api, this.pesanAwal});
@@ -46,7 +46,7 @@ class _HalamanMasukState extends State<HalamanMasuk> {
     try {
       await widget.api.masuk(_email.text.trim(), _kataSandi.text);
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => HalamanBeranda(api: widget.api)));
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => HalamanUtama(api: widget.api)));
     } on GagalApi catch (e) {
       setState(() {
         _galat = e.pesan;
@@ -64,37 +64,33 @@ class _HalamanMasukState extends State<HalamanMasuk> {
             padding: const EdgeInsets.all(16),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
-              child: Kotak(
-                padding: const EdgeInsets.all(24),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Form(
                   key: _form,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Tata letak mengikuti Gambar 3.14a: logo, judul, kolom email dan kata sandi.
                       Image.asset('assets/logo.png', width: 72, height: 72, excludeFromSemantics: true),
                       const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        decoration: const BoxDecoration(
-                          border: Border(bottom: BorderSide(color: Warna.tinta, width: 2)),
-                        ),
-                        child: Semantics(
-                          header: true,
-                          child: const Text(
-                            'Klasifikasi Benih\nJagung Ketan Putih',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, height: 1.35),
-                          ),
-                        ),
+                      Semantics(
+                        header: true,
+                        child: const Text('Masuk',
+                            textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 4),
+                      const Text('Klasifikasi Kelayakan Tanam\nBenih Jagung Ketan Putih',
+                          textAlign: TextAlign.center, style: TextStyle(color: Warna.tintaLembut, height: 1.4)),
+                      const SizedBox(height: 24),
                       if (_galat != null) ...[
                         PesanGalat(_galat!),
                         const SizedBox(height: 16),
                       ],
                       TextFormField(
                         controller: _email,
-                        decoration: const InputDecoration(labelText: 'Email'),
+                        decoration: const InputDecoration(
+                            labelText: 'Email', hintText: 'nama@email.com', prefixIcon: Icon(Icons.mail_outline)),
                         keyboardType: TextInputType.emailAddress,
                         autofillHints: const [AutofillHints.email],
                         textInputAction: TextInputAction.next,
@@ -105,6 +101,7 @@ class _HalamanMasukState extends State<HalamanMasuk> {
                         controller: _kataSandi,
                         decoration: InputDecoration(
                           labelText: 'Kata sandi',
+                          prefixIcon: const Icon(Icons.lock_outline),
                           suffixIcon: IconButton(
                             tooltip: _sandiTerlihat ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi',
                             icon: Icon(_sandiTerlihat ? Icons.visibility_off_outlined : Icons.visibility_outlined),

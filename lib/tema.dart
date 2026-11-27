@@ -59,7 +59,10 @@ ThemeData buatTema() {
     ),
     filledButtonTheme: FilledButtonThemeData(
       // Saat memproses, tombol tetap terbaca (putih di atas abu kehijauan, 5,5:1) seperti .tombol:disabled di web.
+      // Tombol utama gelap seperti rancangan antarmuka (Gambar 3.14-3.16).
       style: FilledButton.styleFrom(
+        backgroundColor: Warna.tinta,
+        foregroundColor: Colors.white,
         minimumSize: const Size(64, 48),
         disabledBackgroundColor: const Color(0xFF5F6D61),
         disabledForegroundColor: Colors.white,
@@ -155,6 +158,73 @@ class PesanGalat extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(pesan, style: const TextStyle(color: Warna.galatTeks)),
+      ),
+    );
+  }
+}
+
+// Lencana hasil pada daftar riwayat: Layak terisi, Tidak Layak bergaris (Gambar 3.15a dan 3.16a).
+class LencanaHasil extends StatelessWidget {
+  const LencanaHasil(this.hasil, {super.key});
+
+  final String hasil;
+
+  @override
+  Widget build(BuildContext context) {
+    final warna = warnaHasil(hasil);
+    final terisi = hasil == 'Layak';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      decoration: BoxDecoration(
+        color: terisi ? warna : Warna.kertas,
+        border: Border.all(color: warna, width: 1.5),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(hasil,
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: terisi ? Colors.white : warna)),
+    );
+  }
+}
+
+// Kotak keterangan dengan garis tebal di kiri, seperti petunjuk dan catatan pada rancangan.
+class KotakCatatan extends StatelessWidget {
+  const KotakCatatan({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: const BoxDecoration(
+        color: Warna.hijauMuda,
+        border: Border(left: BorderSide(color: Warna.tinta, width: 4)),
+      ),
+      child: DefaultTextStyle.merge(style: const TextStyle(fontSize: 13, height: 1.4), child: child),
+    );
+  }
+}
+
+// Kartu angka ringkasan (jumlah klasifikasi, layak, tidak layak, tanggal bergabung).
+class KartuAngka extends StatelessWidget {
+  const KartuAngka({super.key, required this.label, required this.nilai, this.besar = true});
+
+  final String label;
+  final String nilai;
+  final bool besar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Kotak(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 13, color: Warna.tintaLembut)),
+          const SizedBox(height: 4),
+          Text(nilai, style: TextStyle(fontSize: besar ? 26 : 16, fontWeight: FontWeight.w800)),
+        ],
       ),
     );
   }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'halaman/beranda.dart';
+import 'halaman/utama.dart';
 import 'halaman/masuk.dart';
 import 'layanan/api.dart';
 import 'layanan/sesi.dart';
@@ -25,7 +25,7 @@ class AplikasiBenih extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: buatTema(),
       // Token tersimpan berarti petani pernah masuk dan belum keluar: langsung ke beranda.
-      home: api.sesi.masuk ? HalamanBeranda(api: api) : HalamanMasuk(api: api),
+      home: api.sesi.masuk ? HalamanUtama(api: api) : HalamanMasuk(api: api),
     );
   }
 }

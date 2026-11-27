@@ -4,6 +4,7 @@ import '../layanan/api.dart';
 import '../tema.dart';
 import '../widget/kartu_hasil.dart';
 
+// Halaman Riwayat Klasifikasi (Gambar 3.16a): hanya riwayat milik petani yang masuk.
 class HalamanRiwayat extends StatefulWidget {
   const HalamanRiwayat({super.key, required this.api, required this.onSesiBerakhir});
 
@@ -18,7 +19,6 @@ class _HalamanRiwayatState extends State<HalamanRiwayat> {
   final List<Riwayat> _isi = [];
   int _halaman = 0;
   int _halamanTerakhir = 1;
-  int _total = 0;
   bool _memuat = false;
   String? _galat;
 
@@ -41,7 +41,6 @@ class _HalamanRiwayatState extends State<HalamanRiwayat> {
         _isi.addAll(hasil.isi);
         _halaman = hasil.halaman;
         _halamanTerakhir = hasil.halamanTerakhir;
-        _total = hasil.total;
       });
     } on GagalApi catch (e) {
       if (e.sesiBerakhir) {
@@ -56,113 +55,83 @@ class _HalamanRiwayatState extends State<HalamanRiwayat> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isi.isEmpty && _memuat) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [CircularProgressIndicator(), SizedBox(height: 12), Text('Memuat riwayat...')],
-        ),
-      );
-    }
-
-    if (_isi.isEmpty && _galat != null) {
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          PesanGalat(_galat!),
-          const SizedBox(height: 12),
-          OutlinedButton(onPressed: () => _muat(ulang: true), child: const Text('Coba lagi')),
-        ],
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => _muat(ulang: true),
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        // Satu baris tambahan di awal untuk jumlah, satu di akhir untuk tombol muat berikutnya.
-        itemCount: _isi.length + 2,
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
-        itemBuilder: (context, i) {
-          if (i == 0) return _judul();
-          if (i == _isi.length + 1) return _bawah();
-          return _BarisRiwayat(riwayat: _isi[i - 1], header: widget.api.headerToken);
-        },
-      ),
-    );
-  }
-
-  Widget _judul() {
-    if (_isi.isEmpty) {
-      return const Kotak(
-        child: Text('Belum ada riwayat. Hasil setiap pemeriksaan benih akan tersimpan di sini.',
-            style: TextStyle(color: Warna.tintaLembut)),
-      );
-    }
-    return Text('$_total pemeriksaan tersimpan', style: const TextStyle(color: Warna.tintaLembut));
-  }
-
-  Widget _bawah() {
-    if (_galat != null) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          PesanGalat(_galat!),
-          const SizedBox(height: 8),
-          OutlinedButton(onPressed: _muat, child: const Text('Coba lagi')),
-        ],
-      );
-    }
-    if (_halaman >= _halamanTerakhir) return const SizedBox.shrink();
-    return OutlinedButton(
-      onPressed: _memuat ? null : _muat,
-      child: Text(_memuat ? 'Memuat...' : 'Tampilkan riwayat sebelumnya'),
+    return Scaffold(
+      appBar: AppBar(title: const Text('Riwayat Klasifikasi')),
+      body: _isi.isEmpty && _memuat
+          ? const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [CircularProgressIndicator(), SizedBox(height: 12), Text('Memuat riwayat...')],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: () => _muat(ulang: true),
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  if (_isi.isEmpty && _galat == null)
+                    const Kotak(
+                      child: Text('Belum ada riwayat. Hasil setiap klasifikasi benih akan tersimpan di sini.',
+                          style: TextStyle(color: Warna.tintaLembut)),
+                    ),
+                  for (final r in _isi) BarisRiwayat(riwayat: r, header: widget.api.headerToken),
+                  if (_galat != null) ...[
+                    PesanGalat(_galat!),
+                    const SizedBox(height: 8),
+                    OutlinedButton(onPressed: () => _muat(ulang: _isi.isEmpty), child: const Text('Coba lagi')),
+                  ] else if (_halaman < _halamanTerakhir) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: _memuat ? null : _muat,
+                      child: Text(_memuat ? 'Memuat...' : 'Tampilkan riwayat sebelumnya'),
+                    ),
+                  ],
+                ],
+              ),
+            ),
     );
   }
 }
 
-class _BarisRiwayat extends StatelessWidget {
-  const _BarisRiwayat({required this.riwayat, required this.header});
+// Satu baris riwayat: citra, kelas hasil, skor kepercayaan, dan waktu (Gambar 3.15a dan 3.16a).
+class BarisRiwayat extends StatelessWidget {
+  const BarisRiwayat({super.key, required this.riwayat, required this.header});
 
   final Riwayat riwayat;
   final Map<String, String> header;
 
   @override
   Widget build(BuildContext context) {
-    final warna = warnaHasil(riwayat.hasil);
-    return Material(
-      color: Warna.kertas,
-      shape: RoundedRectangleBorder(
-        side: const BorderSide(color: Warna.garis),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => _DetailRiwayat(riwayat: riwayat, header: header),
-        )),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: SizedBox(width: 64, height: 64, child: _gambar(riwayat, header)),
+    return InkWell(
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => HalamanDetailRiwayat(riwayat: riwayat, header: header),
+      )),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Warna.garis))),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: SizedBox(width: 56, height: 56, child: _gambar(riwayat, header)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  LencanaHasil(riwayat.hasil),
+                  const SizedBox(height: 4),
+                  Text.rich(TextSpan(children: [
+                    const TextSpan(text: 'Skor kepercayaan: '),
+                    TextSpan(text: formatSkor(riwayat.skor), style: const TextStyle(fontWeight: FontWeight.w700)),
+                  ])),
+                  Text(formatTanggal(riwayat.waktu), style: const TextStyle(fontSize: 12, color: Warna.tintaLembut)),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(riwayat.hasil, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: warna)),
-                    Text('Skor ${formatSkor(riwayat.skor)}'),
-                    Text(formatTanggal(riwayat.waktu), style: const TextStyle(fontSize: 13, color: Warna.tintaLembut)),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, color: Warna.tintaLembut),
-            ],
-          ),
+            ),
+            const Icon(Icons.chevron_right, color: Warna.tintaLembut),
+          ],
         ),
       ),
     );
@@ -177,7 +146,7 @@ Widget _gambar(Riwayat riwayat, Map<String, String> header) {
       riwayat.urlGambar,
       headers: header,
       fit: BoxFit.cover,
-      cacheWidth: 192,
+      cacheWidth: 168,
       semanticLabel: 'Foto benih',
       errorBuilder: (_, _, _) => const Center(
         child: Icon(Icons.broken_image_outlined, color: Colors.white70, semanticLabel: 'Foto tidak dapat dimuat'),
@@ -186,8 +155,8 @@ Widget _gambar(Riwayat riwayat, Map<String, String> header) {
   );
 }
 
-class _DetailRiwayat extends StatelessWidget {
-  const _DetailRiwayat({required this.riwayat, required this.header});
+class HalamanDetailRiwayat extends StatelessWidget {
+  const HalamanDetailRiwayat({super.key, required this.riwayat, required this.header});
 
   final Riwayat riwayat;
   final Map<String, String> header;
@@ -195,10 +164,10 @@ class _DetailRiwayat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Detail Riwayat')),
+      appBar: AppBar(title: const Text('Hasil Klasifikasi')),
       body: ListView(
         padding: const EdgeInsets.all(16),
-        children: [KartuHasil(riwayat: riwayat, gambar: NetworkImage(riwayat.urlGambar, headers: header))],
+        children: [TampilanHasil(riwayat: riwayat, gambar: NetworkImage(riwayat.urlGambar, headers: header))],
       ),
     );
   }

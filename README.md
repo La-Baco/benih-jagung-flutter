@@ -1,11 +1,11 @@
 # Cek Benih Jagung (aplikasi Android petani)
 
-Aplikasi Flutter untuk petani. Isinya memeriksa kelayakan tanam benih jagung ketan putih dari foto, mode kamera langsung, dan riwayat. Klasifikasi dikerjakan server: aplikasi mengirim foto ke API Laravel, dan Laravel meneruskannya ke layanan Flask. Model tidak ada di HP. Model dilatih di perangkat pengembang (laptop peneliti), dan server hanya menjalankan prediksi.
+Aplikasi Flutter untuk petani. Isinya mengklasifikasi kelayakan tanam benih jagung ketan putih dari foto, riwayat, dan akun. Tampilannya mengikuti rancangan antarmuka Subbab 3.20.1 (Gambar 3.14-3.16). Klasifikasi dikerjakan server: aplikasi mengirim foto ke API Laravel, dan Laravel meneruskannya ke layanan Flask. Model tidak ada di HP. Model dilatih di perangkat pengembang (laptop peneliti), dan server hanya menjalankan prediksi.
 
 - **Versi:** Flutter 3.47.5, Dart 3.13.4, Android 7.0 (API 24) ke atas
-- **Paket:** `http`, `image_picker`, `camera`, dan `flutter_secure_storage`
+- **Paket:** `http`, `image_picker`, dan `flutter_secure_storage`
 - **Server:** API `https://api.skripsi-danur.synvorateknologiindonesia.web.id/api`
-- **Unduh APK:** halaman [Releases](https://github.com/La-Baco/benih-jagung-flutter/releases/latest) (versi 25 November 2026 sudah memuat hasil "Bukan Jagung Ketan Putih" dan bounding box)
+- **Unduh APK:** halaman [Releases](https://github.com/La-Baco/benih-jagung-flutter/releases/latest) (versi 27 November 2026: tampilan sesuai rancangan, tanpa mode kamera langsung)
 
 ## Layar
 
@@ -14,9 +14,13 @@ Aplikasi Flutter untuk petani. Isinya memeriksa kelayakan tanam benih jagung ket
 | Masuk | Email dan kata sandi petani. Login cukup sekali, karena token disimpan di Android Keystore sampai menekan Keluar. Akun admin ditolak, karena admin memakai website |
 | Daftar | Registrasi mandiri petani: nama, email, kata sandi, dan konfirmasi. Setelah berhasil langsung masuk ke beranda |
 | Lupa kata sandi | Mengirim tautan atur ulang ke email terdaftar. Kata sandi baru diatur di halaman website |
-| Periksa | Ambil foto atau pilih dari galeri, pratinjau, lalu kirim. Format (JPEG/PNG) dan ukuran (maksimal 10 MB) diperiksa sebelum dikirim. Hasil Layak, Tidak Layak, atau Bukan Jagung Ketan Putih (misalnya kerikil), skor kepercayaan, batang skor, dan foto dengan bounding box setiap objek |
-| Kamera | Mode percobaan. Setiap objek di atas alas polos diberi kotak: benih jagung ketan putih dengan skor 0-1 (0,50 ke atas = layak), benda lain dengan kotak oranye "Bukan ketan putih". Bisa dijeda. Hasil tidak disimpan |
-| Riwayat | Daftar hasil pemeriksaan, tarik ke bawah untuk memuat ulang, ketuk satu baris untuk melihat fotonya beserta bounding box |
+| Beranda | Gambar 3.15a: sapaan, jumlah klasifikasi, jumlah Layak dan Tidak Layak, tombol Klasifikasi benih, dan tiga klasifikasi terakhir |
+| Klasifikasi Benih | Gambar 3.15b: petunjuk pemotretan (Tabel 3.2), pratinjau citra, tombol Kamera dan Galeri, lalu Kirim dan klasifikasikan. Format (JPEG/PNG) dan ukuran (maksimal 10 MB) diperiksa sebelum dikirim. Foto yang tidak berisi biji jagung ditolak server dengan pesan |
+| Hasil Klasifikasi | Gambar 3.15c: citra dengan bounding box, kelas Layak atau Tidak Layak, skor kepercayaan dan batangnya, keterangan uji daya berkecambah, tombol Klasifikasi lagi dan Ke beranda |
+| Riwayat Klasifikasi | Gambar 3.16a: daftar hasil milik petani (citra, lencana kelas, skor, waktu), tarik ke bawah untuk memuat ulang, ketuk untuk detail |
+| Akun | Gambar 3.16b: nama, email, peran Petani, ringkasan jumlah klasifikasi dan tanggal bergabung, tombol Logout |
+
+Mode kamera langsung dihapus (27 November 2026): frame dikirim terus-menerus, sehingga kuota validasi objek Gemini di server akan cepat habis.
 
 Setiap layar yang memuat data punya keadaan memuat, kosong, dan galat. Bila token ditolak server, aplikasi kembali ke halaman masuk dengan pesan "Sesi berakhir".
 
@@ -24,22 +28,23 @@ Setiap layar yang memuat data punya keadaan memuat, kosong, dan galat. Bila toke
 
 | Berkas | Isi |
 |---|---|
-| `lib/main.dart` | Memuat token tersimpan, lalu membuka halaman masuk atau beranda |
-| `lib/layanan/api.dart` | Pemanggil API (`/login`, `/register`, `/lupa-sandi`, `/klasifikasi`, `/deteksi`, `/riwayat`, `/logout`), batas waktu, dan pesan galat |
+| `lib/main.dart` | Memuat token tersimpan, lalu membuka halaman masuk atau halaman utama |
+| `lib/layanan/api.dart` | Pemanggil API (`/login`, `/register`, `/lupa-sandi`, `/klasifikasi`, `/riwayat`, `/logout`), batas waktu, dan pesan galat |
 | `lib/layanan/sesi.dart` | Simpan dan hapus token |
 | `lib/halaman/masuk.dart` | Halaman masuk, dengan tautan ke Daftar dan Lupa kata sandi |
 | `lib/halaman/daftar.dart` | Registrasi petani |
 | `lib/halaman/lupa_sandi.dart` | Permintaan tautan atur ulang kata sandi |
-| `lib/halaman/beranda.dart` | Tab Periksa, Kamera, dan Riwayat, serta tombol Keluar |
-| `lib/halaman/periksa.dart` | Pilih foto dan kirim. Foto kamera diperkecil ke lebar 3.000 px (lebar acuan prapemrosesan); foto galeri dikirim apa adanya setelah format dan ukurannya diperiksa |
-| `lib/halaman/kamera.dart` | Kamera langsung. Satu frame dikirim setelah jawaban frame sebelumnya diterima, jadi permintaan tidak menumpuk |
+| `lib/halaman/utama.dart` | Menu bawah Beranda, Klasifikasi, Riwayat, Akun |
+| `lib/halaman/beranda.dart` | Beranda dengan ringkasan dan klasifikasi terakhir |
+| `lib/halaman/klasifikasi.dart` | Pilih foto dan kirim, lalu halaman hasil. Foto kamera diperkecil ke lebar 3.000 px (lebar acuan prapemrosesan); foto galeri dikirim apa adanya setelah format dan ukurannya diperiksa |
+| `lib/halaman/akun.dart` | Data akun, ringkasan, dan logout |
 | `lib/halaman/riwayat.dart` | Daftar riwayat bertahap dan detail |
-| `lib/widget/kartu_hasil.dart` | Kartu hasil klasifikasi |
-| `lib/widget/kotak_objek.dart` | Penggambar bounding box (dipakai kartu hasil dan mode kamera); rasio foto dibaca dulu supaya kotak tepat di atas objek |
+| `lib/widget/kartu_hasil.dart` | Isi halaman Hasil Klasifikasi |
+| `lib/widget/kotak_objek.dart` | Penggambar bounding box (dipakai halaman hasil); rasio foto dibaca dulu supaya kotak tepat di atas objek |
 | `lib/tema.dart` | Warna dan gaya yang sama dengan web (garis tegas 2 px, warna hasil hanya untuk kelas: hijau Layak, merah Tidak Layak, cokelat Bukan Jagung Ketan Putih) |
 | `assets/` | Logo jagung putih dan huruf Plus Jakarta Sans (lisensi OFL) |
 | `android/` | Nama aplikasi, ikon adaptif, izin internet dan kamera (izin mikrofon dari plugin kamera dibuang) |
-| `test/widget_test.dart` | 12 uji: masuk, beranda, riwayat kosong, galat, sesi berakhir, ikon mata, registrasi, lupa kata sandi, pemeriksaan format/ukuran citra, dan pembacaan hasil Bukan Jagung Ketan Putih beserta bounding box |
+| `test/widget_test.dart` | 14 uji: masuk, beranda dan ringkasan, akun, menu bawah tanpa kamera langsung, riwayat kosong, galat, sesi berakhir, ikon mata, registrasi, lupa kata sandi, pemeriksaan format/ukuran citra, dan pembacaan riwayat lama beserta bounding box |
 
 ## Membangun dan menguji
 

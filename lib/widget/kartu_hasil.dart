@@ -10,10 +10,17 @@ String formatTanggal(DateTime waktu) {
   return '${waktu.day} ${bulan[waktu.month - 1]} ${waktu.year}, $jam';
 }
 
+String formatTanggalSaja(DateTime waktu) {
+  const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  return '${waktu.day} ${bulan[waktu.month - 1]} ${waktu.year}';
+}
+
 String formatSkor(double skor) => '${skor.toStringAsFixed(2).replaceAll('.', ',')}%';
 
-class KartuHasil extends StatelessWidget {
-  const KartuHasil({super.key, required this.riwayat, required this.gambar});
+// Isi halaman Hasil Klasifikasi (Gambar 3.15c): citra yang dikirim, kelas hasil prediksi,
+// skor kepercayaan, dan keterangan bahwa hasil didasarkan pada tampilan fisik benih.
+class TampilanHasil extends StatelessWidget {
+  const TampilanHasil({super.key, required this.riwayat, required this.gambar});
 
   final Riwayat riwayat;
   final ImageProvider gambar;
@@ -21,59 +28,61 @@ class KartuHasil extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final warna = warnaHasil(riwayat.hasil);
-    return Kotak(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text('Hasil klasifikasi', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: GambarBerkotak(gambar: gambar, objek: riwayat.objek, keterangan: 'Foto yang diperiksa'),
-          ),
-          const SizedBox(height: 14),
-          Semantics(
-            liveRegion: true,
-            child: Text(
-              riwayat.hasil,
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, color: warna, height: 1.2),
-            ),
-          ),
-          const SizedBox(height: 6),
-          if (riwayat.bukan) ...[
-            const Text('Objek di foto tidak dikenali sebagai benih jagung ketan putih, '
-                'jadi kelayakan tanamnya tidak dinilai.'),
-            const SizedBox(height: 6),
-          ],
-          Text('Skor kepercayaan: ${formatSkor(riwayat.skor)}'),
-          const SizedBox(height: 8),
-          // Batang berwarna tinta, bukan hijau: batang menunjukkan keyakinan terhadap kelas
-          // yang diprediksi, jadi hijau akan menyesatkan saat hasilnya Tidak Layak.
-          ExcludeSemantics(
-            child: Container(
-              height: 14,
-              decoration: BoxDecoration(
-                color: Warna.batangLatar,
-                border: Border.all(color: Warna.tinta),
-                borderRadius: BorderRadius.circular(4),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: GambarBerkotak(gambar: gambar, objek: riwayat.objek, keterangan: 'Foto yang diklasifikasi'),
+        ),
+        const SizedBox(height: 14),
+        Kotak(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('Hasil klasifikasi',
+                  textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Warna.tintaLembut)),
+              const SizedBox(height: 2),
+              Semantics(
+                liveRegion: true,
+                child: Text(riwayat.hasil,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: warna, height: 1.25)),
               ),
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: (riwayat.skor / 100).clamp(0, 1),
-                child: const ColoredBox(color: Warna.tinta),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Expanded(child: Text('Skor kepercayaan:')),
+                  Text(formatSkor(riwayat.skor), style: const TextStyle(fontWeight: FontWeight.w700)),
+                ],
               ),
-            ),
+              const SizedBox(height: 6),
+              // Batang berwarna tinta, bukan hijau: batang menunjukkan keyakinan terhadap kelas
+              // yang diprediksi, jadi hijau akan menyesatkan saat hasilnya Tidak Layak.
+              ExcludeSemantics(
+                child: Container(
+                  height: 10,
+                  decoration: BoxDecoration(color: Warna.batangLatar, borderRadius: BorderRadius.circular(5)),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: (riwayat.skor / 100).clamp(0, 1),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(color: Warna.tinta, borderRadius: BorderRadius.circular(5)),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(formatTanggal(riwayat.waktu),
+                  textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: Warna.tintaLembut)),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(formatTanggal(riwayat.waktu), style: const TextStyle(fontSize: 13, color: Warna.tintaLembut)),
-          const SizedBox(height: 4),
-          const Text(
-            'Hasil didasarkan pada tampilan fisik benih dan tidak menggantikan uji daya berkecambah. '
-            'Model dilatih di perangkat pengembang (laptop peneliti); server hanya menjalankan prediksi.',
-            style: TextStyle(fontSize: 13, color: Warna.tintaLembut),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+        const KotakCatatan(
+          child: Text('Hasil didasarkan pada tampilan fisik benih dan tidak menggantikan uji daya berkecambah.'),
+        ),
+      ],
     );
   }
 }

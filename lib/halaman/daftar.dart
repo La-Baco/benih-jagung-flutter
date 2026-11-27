@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../layanan/api.dart';
 import '../tema.dart';
-import 'beranda.dart';
+import 'utama.dart';
 
 // Registrasi mandiri petani. Akun yang dibuat dari halaman ini selalu berperan petani.
 class HalamanDaftar extends StatefulWidget {
@@ -46,7 +46,7 @@ class _HalamanDaftarState extends State<HalamanDaftar> {
       await widget.api.daftar(_nama.text.trim(), _email.text.trim(), _kataSandi.text, _konfirmasi.text);
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => HalamanBeranda(api: widget.api)), (_) => false);
+          MaterialPageRoute(builder: (_) => HalamanUtama(api: widget.api)), (_) => false);
     } on GagalApi catch (e) {
       setState(() {
         _galat = e.pesan;
@@ -61,6 +61,7 @@ class _HalamanDaftarState extends State<HalamanDaftar> {
       controller: kontrol,
       decoration: InputDecoration(
         labelText: label,
+        prefixIcon: const Icon(Icons.lock_outline),
         suffixIcon: IconButton(
           tooltip: terlihat ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi',
           icon: Icon(terlihat ? Icons.visibility_off_outlined : Icons.visibility_outlined),
@@ -76,27 +77,39 @@ class _HalamanDaftarState extends State<HalamanDaftar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Daftar akun petani')),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
-              child: Kotak(
-                padding: const EdgeInsets.all(24),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Form(
                   key: _form,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Tata letak mengikuti Gambar 3.14b.
+                      Image.asset('assets/logo.png', width: 64, height: 64, excludeFromSemantics: true),
+                      const SizedBox(height: 10),
+                      Semantics(
+                        header: true,
+                        child: const Text('Daftar Akun Petani',
+                            textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text('Isi data berikut untuk membuat akun',
+                          textAlign: TextAlign.center, style: TextStyle(color: Warna.tintaLembut)),
+                      const SizedBox(height: 20),
                       if (_galat != null) ...[
                         PesanGalat(_galat!),
                         const SizedBox(height: 16),
                       ],
                       TextFormField(
                         controller: _nama,
-                        decoration: const InputDecoration(labelText: 'Nama'),
+                        decoration: const InputDecoration(
+                            labelText: 'Nama', hintText: 'Nama lengkap', prefixIcon: Icon(Icons.person_outline)),
                         textCapitalization: TextCapitalization.words,
                         autofillHints: const [AutofillHints.name],
                         textInputAction: TextInputAction.next,
@@ -105,7 +118,8 @@ class _HalamanDaftarState extends State<HalamanDaftar> {
                       const SizedBox(height: 14),
                       TextFormField(
                         controller: _email,
-                        decoration: const InputDecoration(labelText: 'Email'),
+                        decoration: const InputDecoration(
+                            labelText: 'Email', hintText: 'nama@email.com', prefixIcon: Icon(Icons.mail_outline)),
                         keyboardType: TextInputType.emailAddress,
                         autofillHints: const [AutofillHints.email],
                         textInputAction: TextInputAction.next,
